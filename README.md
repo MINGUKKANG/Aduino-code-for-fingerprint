@@ -4,57 +4,25 @@ Efficient Neural Architecture search via parameter sharing(ENAS) micro search Te
 Now I work very hard ㅠㅠ
 
 ```python
+import tensorflow as tf
 import numpy as np
-import math
 
-W1 = [[1.0,1.2], [-1.0,-1.1]]
-W2 = [[1.0,-1.0],[0.5,1.0]]
-W3 = [[-0.8,1.0],[0.3,0.4]]
-W4 = [[0.1,-0.2],[1.3,-0.4]]
+inputs = np.array([[[1,1,1],[2,1,3],[0,1,0]],
+                   [[2,2,2],[1,0,1],[0,0,1]],
+                   [[0,3,0],[1,0,1],[1,0,0]]],dtype = np.float32)
+inputs = np.reshape(inputs, [1,3,3,3])
 
-b1 = [[-0.3],[1.6]]
-b2 = [[1.0],[0.7]]
-b3 = [[0.5],[-0.1]]
-b4 = [[1.0],[-0.2]]
+w = np.array([[[0.0,0.0,0.0],[0.0,0.0,1.0],[0.0,1.0,0.0]],[[0.0,2.0,0.0],[0.0,2.0,0.0],[0.0,2.0,0.0]], [[1.0,0.0,0.0],[0.0,2.0,0.0],[0.0,0.0,1.0]]])
+w = np.reshape(w,[3,3,3,1])
 
-X = [[1.0],[0.0]]
+net = tf.nn.conv2d(inputs,w, strides = [1,1,1,1], padding ="SAME")
 
-def mat(a,b,bias):
-    return np.matmul(a,b) + bias
+net = tf.reshape(net,[3,3])
 
-def relu(x):
-    holder = []
-    length = len(x)
-    for j in range(length):
-        if x[j]>=0:
-            holder.append(x[j])
-        else:
-            holder.append(0)
-    holder = np.reshape(holder,[-1,1])
-    return holder
+sess = tf.Session()
+sess.run(tf.initialize_all_variables())
 
-def sigmoid(x):
-    holder = []
-    length = len(x)
-    for i in range(length):
-        z = math.exp(-x[i])
-        z = 1/(1+z)
-        holder.append(z)
-    holder = np.reshape(holder,[-1,1])
-    return holder
+result = sess.run(net)
+print(result)
 
-def activation(inputs, activation_fn = "sigmoid"):
-    if activation_fn is "sigmoid":
-        inputs = sigmoid(inputs)
-
-    else:
-        inputs = relu(inputs)
-    return inputs
-
-net1 = activation(mat(W1,X,b1), activation_fn ="sigmoid")
-net2 = activation(mat(W2,net1,b2),activation_fn ="sigmoid")
-net3 = activation(mat(W3,net2,b3),activation_fn ="sigmoid")
-net4 = activation(mat(W4,net3,b4),activation_fn ="sigmoid")
-
-print(net4)
 ```
