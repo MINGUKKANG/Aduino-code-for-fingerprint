@@ -1,11 +1,49 @@
-#include <Servo.h>
+
+      return p;
+    case FINGERPRINT_FEATUREFAIL:
+      Serial.println("Could not find fingerprint features");
+      return p;
+    case FINGERPRINT_INVALIDIMAGE:
+      Serial.println("Could not find fingerprint features");
+      return p;
+    default:
+      Serial.println("Unknown error");
+      return p;
+  }
+  
+  // OK converted!
+  p = finger.fingerFastSearch();
+  if (p == FINGERPRINT_OK) {
+    Serial.println("Found a print match!");
+  } else if (p == FINGERPRINT_PACKETRECIEVEERR) {
+    Serial.println("Communication error");
+    return p;
+  } else if (p == FINGERPRINT_NOTFOUND) {
+    Serial.println("Did not find a match");
+    return p;
+  } else {
+    Serial.println("Unknown error");
+    return p;
+  }   
+  
+  // found a match!
+  Serial.print("Found ID #"); Serial.print(finger.fingerID); 
+  Serial.print(" with confidence of "); Serial.println(finger.confidence); 
+}
+
+int getFingerprintIDez() {
+  uint8_t p = finger.getImage();
+  if (p != FINGERPRINT_OK)  return -1;
+
+  p = finger.image2Tz#include <Servo.h>
 #include <Adafruit_Fingerprint.h>
 #include <SoftwareSerial.h>
 
-int blueTx=8;
-int blueRx=9;
-SoftwareSerial myserial(blueTx,blueRx);
 String myString="";
+
+int blueTx=8;   //Tx (보내는핀 설정)at
+int blueRx=9;   //Rx (받는핀 설정)
+SoftwareSerial blue(blueTx, blueRx);  //시리얼 통신을 위한 객체선언
 
 int getFingerprintIDez();
 SoftwareSerial mySerial(2, 3);
@@ -16,7 +54,8 @@ int pos = 0;
     
 void setup() {                
   Serial.begin(9600);
-  mySerial.begin(9600); //블루투스 시리얼
+  mySerial.begin(9600); //지문인식
+  blue.begin(9600); //블루투스 시리얼
   pinMode(piezo, OUTPUT);     // 피에조 부저 제어를 위한 4번 디지털 핀 사용
   // Init fingerprint
   finger.begin(57600);
@@ -36,8 +75,29 @@ void setup() {
 
 void loop()
 {
+  blue.listen();
+  if (blue.available()) {       
+    Serial.write(blue.read());  //블루투스측 내용을 시리얼모니터에 출력
+  }
+  if (Serial.available()) {         
+    blue.write(Serial.read());  //시리얼 모니터 내용을 블루추스 측에 WRITE
+  }
+  
+  while(blue.available())
+  {
+    char myChar = (char)blue.read();
+    myString+=myChar;
+    delay(5);
+    Serial.println(myString);
+    myString ="";
+    myChar ="";
+    Serial.println("");
+    delay(1000);
+  }
+
+
+  mySerial.listen();
   int idFinger = getFingerprintIDez();
-  Serial.println(idFinger);
   
   if (idFinger != -1)
   {
@@ -52,29 +112,7 @@ void loop()
     myservo.write(30);
   }
   delay(1000);
-
-  while(mySerial.available())
-  {
-    char myChar = (char)myserial.read();
-    myString+=myChar;
-    delay(5);
-  }
-
-  if(!myString.equals(""))
-  {
-    Serial.println("input  value: " + myString);
-    if(myString=="on")
-    {
-      myservo.write(100);
-    }
-    else{
-      myservo.write(30);
-    }
-    myString="";
-  }
 }
-
-  
   
 /*
  * Fingerprint Utils
@@ -147,6 +185,16 @@ int getFingerprintIDez() {
   if (p != FINGERPRINT_OK)  return -1;
 
   p = finger.image2Tz();
+  if (p != FINGERPRINT_OK)  return -1;
+
+  p = finger.fingerFastSearch();
+  if (p != FINGERPRINT_OK)  return -1;
+  
+  // found a match!
+  Serial.print("Found ID #"); Serial.print(finger.fingerID); 
+  Serial.print(" with confidence of "); Serial.println(finger.confidence);
+  return finger.fingerID; 
+}
   if (p != FINGERPRINT_OK)  return -1;
 
   p = finger.fingerFastSearch();
